@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Arapça Kartlar</title>
+
+<style>
+body {
+    font-family: Arial, sans-serif;
+    background: hsl(209, 54%, 42%);
+    margin: 0;
+    text-align: center;
+}
+
+.container { padding: 20px; }
+
+.card {
+    width: 90%;
+    max-width: 420px;
+    height: 240px;
+    margin: 40px auto;
+    perspective: 1000px;
+}
+
+.inner {
+    width: 100%;
+    height: 100%;
+    position: relative;
+    transition: transform 0.6s;
+    transform-style: preserve-3d;
+}
+
+.flipped {
+    transform: rotateY(180deg);
+}
+
+.face {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    background: #baedff;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 26px;
+    backface-visibility: hidden;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+    padding: 10px;
+}
+
+.back {
+    transform: rotateY(180deg);
+    background: #e3f2fd;
+}
+
+button {
+    padding: 12px 18px;
+    margin: 10px;
+    border: none;
+    border-radius: 8px;
+    font-size: 16px;
+}
+
+.correct { background: #75f079; color: white; }
+.wrong { background: #f47369; color: white; }
+</style>
+</head>
+
+<body>
+
+<h3 id="status">Yükleniyor...</h3>
+
+<div class="card" onclick="flipCard()">
+    <div class="inner" id="cardInner">
+        <div class="face" id="front"></div>
+        <div class="face back" id="back"></div>
+    </div>
+</div>
+
+<div>
+    <button class="correct" onclick="answer(true)">Bildim</button>
+    <button class="wrong" onclick="answer(false)">Bilemedim</button>
+</div>
+
+<script>
+
+// 🔴 SENİN GOOGLE SHEETS
+const SHEET_URL = "https://opensheet.elk.sh/1mQk1D3tTS6DC9N2LYvTADZXBXk1y5-NH1Wj82M4ZMjs/Sheet1";
+
+let cards = [];
+let index = 0;
+let wrong = [];
+
+function shuffle(arr) {
+    return arr.sort(() => Math.random() - 0.5);
+}
+
+// 📥 DATA ÇEK
+async function loadData() {
+    const res = await fetch(SHEET_URL);
+    const data = await res.json();
+
+    cards = data.map(row => ({
+        front: row.Arabic,
+        back: row.Turkish
+    }));
+
+    cards = shuffle(cards);
+
+    showCard();
+    document.getElementById("status").innerText = `${cards.length} kelime yüklendi`;
+}
+
+// 📌 KART GÖSTER
+function showCard() {
+    if (index >= cards.length) {
+        if (wrong.length > 0) {
+            cards = shuffle(wrong);
+            wrong = [];
+            index = 0;
+            alert("Yanlışlar tekrar geliyor 🔁");
+        } else {
+            alert("Bitti 🎉");
+            return;
+        }
+    }
+
+    const c = cards[index];
+
+    document.getElementById("front").innerText = c.front;
+    document.getElementById("back").innerText = c.back;
+
+    document.getElementById("cardInner").classList.remove("flipped");
+}
+
+// 🔄 FLIP (FIXED)
+function flipCard() {
+    document.getElementById("cardInner").classList.toggle("flipped");
+}
+
+// ✔ CEVAP
+function answer(correct) {
+    const c = cards[index];
+
+    if (!correct) {
+        wrong.push(c);
+    }
+
+    index++;
+    showCard();
+}
+
+// INIT
+loadData();
+
+</script>
+
+</body>
+</html>
