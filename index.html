@@ -23,10 +23,19 @@ button { padding:10px; margin:10px; }
 
 <body>
 
-<h2 id="status">Yükleniyor...</h2>
+<h2 id="status">Seçim yapabilirsin!</h2>
 
-<input type="number" id="limit" placeholder="Kaç kelime?" />
-<button onclick="start()">Başla</button>
+<!-- 🔥 SHEET SEÇİM -->
+<div>
+  <label><input type="checkbox" id="s1" checked> Karışık </label>
+  <input type="number" id="n1" placeholder="adet" style="width:60px">
+
+  <label><input type="checkbox" id="s2"> A1</label>
+  <input type="number" id="n2" placeholder="adet" style="width:60px">
+</div>
+
+<br>
+<button onclick="start()">⋆⭒˚.⋆ Başla ⋆⭒˚.⋆</button>
 
 <div class="card" onclick="flip()">
   <div class="inner" id="card">
@@ -40,49 +49,78 @@ button { padding:10px; margin:10px; }
 
 <script>
 
-// 🔴 BURAYI DEĞİŞTİR
-const URL = "https://opensheet.elk.sh/1mQk1D3tTS6DC9N2LYvTADZXBXk1y5-NH1Wj82M4ZMjs/1";
+// 🔴 SHEET URL'LERİN
+const URLS = {
+  s1: "https://opensheet.elk.sh/1mQk1D3tTS6DC9N2LYvTADZXBXk1y5-NH1Wj82M4ZMjs/Sayfa1",
+  s2: "https://opensheet.elk.sh/1mQk1D3tTS6DC9N2LYvTADZXBXk1y5-NH1Wj82M4ZMjs/Sayfa2"
+};
 
-let cards=[], current=[], wrong=[], i=0;
+let current=[], wrong=[], i=0;
 
 function shuffle(a){ return a.sort(()=>Math.random()-0.5); }
 
-async function load(){
-  let r = await fetch(URL);
-  let d = await r.json();
+// 🚀 BAŞLAT
+async function start(){
 
-  cards = d.map(x => ({
-    front: x["Arapça"],
-    back: x["Türkçe"]
-  }));
-
-  document.getElementById("status").innerText="Hazır";
-}
-
-function start(){
-  let n = parseInt(limit.value);
-  if(!n) return alert("sayı gir");
-
-  current = shuffle([...cards]).slice(0,n);
+  current = [];
   wrong = [];
-  i=0;
+  i = 0;
+
+  for(let key in URLS){
+
+    let checked = document.getElementById(key).checked;
+    let count = parseInt(document.getElementById("n"+key[1]).value);
+
+    if(!checked || !count) continue;
+
+    let r = await fetch(URLS[key]);
+    let d = await r.json();
+
+    let list = d.map(x => ({
+      front: x["Arapça"],
+      back: x["Türkçe"]
+    }));
+
+    list = shuffle(list).slice(0, count);
+
+    current = current.concat(list);
+  }
+
+  if(current.length === 0){
+    return alert("hiç veri seçmedin");
+  }
+
+  current = shuffle(current);
+
   save();
   show();
 }
 
+// 🔥 KART GÖSTER (BUG FIX'Lİ)
 function show(){
   if(i>=current.length) return next();
 
   let c = current[i];
+
+  // animasyonu kapat
+  card.style.transition = "none";
+  card.classList.remove("flipped");
+
+  // zorla uygula
+  card.offsetHeight;
+
+  // geri aç
+  card.style.transition = "0.6s";
+
   front.innerText = c.front;
   back.innerText = c.back;
-  card.classList.remove("flipped");
 
   status.innerText = `${i+1}/${current.length}`;
 }
 
 function flip(){ card.classList.toggle("flipped"); }
 
+// ✅ CEVAP
 function answer(ok){
   let c = current[i];
 
@@ -95,6 +133,7 @@ function answer(ok){
   show();
 }
 
+// 🔁 YANLIŞLAR TEKRAR
 function next(){
   if(wrong.length){
     alert("Yanlışlar tekrar 🔁");
@@ -109,12 +148,14 @@ function next(){
   }
 }
 
+// 💾 KAYDET
 function save(){
   localStorage.setItem("c",JSON.stringify(current));
   localStorage.setItem("w",JSON.stringify(wrong));
   localStorage.setItem("i",i);
 }
 
+// 🔄 DEVAM ET
 function loadState(){
   if(localStorage.getItem("c")){
     current = JSON.parse(localStorage.getItem("c"));
@@ -126,9 +167,10 @@ function loadState(){
   return false;
 }
 
-load().then(()=>{
-  if(!loadState()) status.innerText="Kelime sayısı gir";
-});
+// başlangıç
+if(!loadState()){
+  status.innerText="Sheet seç ve başla";
+}
 
 </script>
 
